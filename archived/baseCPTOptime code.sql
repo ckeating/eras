@@ -1,0 +1,281 @@
+
+
+SELECT
+
+  CASE  WHEN clarity.dbo.OR_PROC_CPT_ID.REAL_CPT_CODE  IN ('27447', '27486', '27487') THEN 'TKA' 
+		WHEN clarity.dbo.OR_PROC_CPT_ID.REAL_CPT_CODE  IN ('27125', '27130', '27132', '27134', '27137', '27138') THEN 'THA'
+		ELSE '*Unknown Type' END
+		AS ProcedureType,
+		
+					
+  clarity.dbo.PATIENT.PAT_NAME,
+  clarity.dbo.patient.PAT_MRN_ID,
+  clarity.dbo.patient.pat_id,
+    clarity.dbo.PAT_ENC_HSP.PAT_ENC_CSN_ID,
+  clarity.dbo.PAT_ENC_HSP.HSP_ACCOUNT_ID,
+  LOSDays=DATEDIFF(dd,clarity.dbo.PAT_ENC_HSP.HOSP_ADMSN_TIME,clarity.dbo.PAT_ENC_HSP.HOSP_DISCH_TIME)    ,
+  LOSHours=DATEDIFF(hh,clarity.dbo.PAT_ENC_HSP.HOSP_ADMSN_TIME,clarity.dbo.PAT_ENC_HSP.HOSP_DISCH_TIME)    ,
+  clarity.dbo.PAT_ENC_HSP.HOSP_ADMSN_TIME,
+  clarity.dbo.PAT_ENC_HSP.HOSP_DISCH_TIME,       
+  clarity.dbo.HSP_ACCOUNT.ADMISSION_TYPE_C,
+  zadm.name AS [Admission Type],
+  clarity.dbo.hsp_account.PATIENT_STATUS_C,
+  clarity.dbo.PAT_ENC_HSP.DISCH_DISP_C,
+  zdd.name AS DischargeDisposition,
+  clarity.dbo.ZC_MC_PAT_STATUS.NAME AS DischargeDisposition2,
+  clarity.dbo.pat_enc_hsp.ADT_PAT_CLASS_C AS Enc_Pat_class_C,
+	ZC_PAT_CLASS_Enc.NAME AS Enc_Pat_Class,
+	  clarity.dbo.or_log.PAT_TYPE_C AS Surgery_pat_class_c,
+  ZC_PAT_CLASS_Surg.NAME AS Surgery_Patient_Class,
+  clarity.dbo.OR_LOG.LOG_ID,
+  clarity.dbo.or_LOG.STATUS_C,
+  zos.NAME AS LogStatus,
+    clarity.dbo.or_log.CASE_CLASS_C ,
+      zocc.NAME  AS [Case Classification],   
+  clarity.dbo.or_log.NUM_OF_PANELS,
+   clarity.dbo.OR_LOG_ALL_PROC.PROC_DISPLAY_NAME,   --added
+  clarity.dbo.OR_PROC_CPT_ID.REAL_CPT_CODE,
+  clarity.dbo.F_AN_RECORD_SUMMARY.AN_52_ENC_CSN_ID AS anescsn,
+  clarity.dbo.PAT_OR_ADM_LINK.OR_LINK_CSN AS admissioncsn,
+  clarity.dbo.PAT_OR_ADM_LINK.PAT_ENC_CSN_ID AS surgicalcsn,
+  clarity.dbo.or_proc.proc_name AS procedurename,
+  CLARITY_SER_LOG_ROOM.PROV_NAME AS Surgery_Room_Name,
+  CLARITY_SER_Surg.prov_id AS SurgeonProvid,
+  CLARITY_SER_Surg.PROV_NAME AS SurgeonName ,
+  CLARITY.dbo.OR_LOG_ALL_SURG.ROLE_C  ,
+  CLARITY.dbo.OR_LOG_ALL_SURG.PANEL  ,
+   CLARITY.dbo.OR_LOG_ALL_PROC.ALL_PROCS_PANEL,
+  --CLARITY_SER_Anthesia1.PROV_NAME,
+  clarity.dbo.OR_LOG_ALL_PROC.LINE AS procline,
+  clarity.dbo.ZC_OR_SERVICE.NAME AS SurgeryServiceName,  
+  clarity.dbo.OR_LOG.SURGERY_DATE,
+  clarity.dbo.OR_LOG.SCHED_START_TIME,
+  clarity.dbo.CLARITY_LOC.LOC_NAME AS SurgeryLocation,
+  Setup_Start.TRACKING_TIME_IN AS setupstart,
+  Setup_End.TRACKING_TIME_IN AS setupend,
+  In_Room.TRACKING_TIME_IN AS inroom,
+  Out_of_Room.TRACKING_TIME_IN AS outofroom,
+  Cleanup_Start.TRACKING_TIME_IN AS cleanupstart,
+  Cleanup_End.TRACKING_TIME_IN AS cleanupend,
+  PACU_IN.TRACKING_TIME_IN AS inpacu,
+  PACU_OUT.TRACKING_TIME_IN AS outofpacu,
+  PRE_PROC_IN.TRACKING_TIME_IN AS inpreprocedure,
+  PRE_PROC_OUT.TRACKING_TIME_IN AS outofpreprocedure,
+  floorhold.TRACKING_TIME_IN AS floorhold,
+  flooroffhold.TRACKING_TIME_IN AS flooroffhold,
+  ANES_START.TRACKING_TIME_IN AS anesstart,
+  ANES_FINISH.TRACKING_TIME_IN AS anesfinish,
+  PROC_START.TRACKING_TIME_IN AS procedurestart,
+  PROC_FINISH.TRACKING_TIME_IN AS procedurefinish,
+  proccarecomplete.TRACKING_TIME_IN AS procedurecarecomplete,
+  postopday1_begin=CONVERT(DATETIME,CONVERT(DATE,DATEADD(dd,1,PROC_START.TRACKING_TIME_IN))),
+  postopday2_begin=CONVERT(DATETIME,CONVERT(DATE,DATEADD(dd,2,PROC_START.TRACKING_TIME_IN))),
+  postopday3_begin=CONVERT(DATETIME,CONVERT(DATE,DATEADD(dd,3,PROC_START.TRACKING_TIME_IN))),
+  postopday4_begin=CONVERT(DATETIME,CONVERT(DATE,DATEADD(dd,3,PROC_START.TRACKING_TIME_IN))),
+  ra.HospitalWide_30DayReadmission_NUM,
+  ra.HospitalWide_30DayReadmission_DEN
+  
+  
+
+--INTO ##erasproc
+
+FROM    clarity.dbo.OR_LOG 
+   left OUTER JOIN CLARITY.dbo.OR_LOG_ALL_PROC  ON clarity.dbo.OR_LOG.LOG_ID=clarity.dbo.OR_LOG_ALL_PROC.LOG_ID   
+   left OUTER JOIN CLARITY.dbo.OR_PROC  ON (CLARITY.dbo.OR_LOG_ALL_PROC.OR_PROC_ID=CLARITY.dbo.OR_PROC.OR_PROC_ID)
+   LEFT OUTER JOIN CLARITY.dbo.OR_LOG_ALL_SURG ON (CLARITY.dbo.OR_LOG.LOG_ID=CLARITY.dbo.OR_LOG_ALL_SURG.LOG_ID)
+   AND CLARITY.dbo.OR_LOG_ALL_SURG.PANEL=1 --primary surgeon only
+   AND CLARITY.dbo.OR_LOG_ALL_SURG.ROLE_C=1  
+  LEFT OUTER JOIN clarity.dbo.PAT_OR_ADM_LINK ON (CLARITY.dbo.PAT_OR_ADM_LINK.LOG_ID=CLARITY.dbo.OR_LOG.LOG_ID)
+   LEFT OUTER JOIN clarity.dbo.PAT_ENC_HSP ON (CLARITY.dbo.PAT_ENC_HSP.PAT_ENC_CSN_ID=CLARITY.dbo.PAT_OR_ADM_LINK.OR_LINK_CSN)
+   LEFT JOIN clarity.dbo.HSP_ACCOUNT  ON CLARITY.dbo.PAT_ENC_HSP.HSP_ACCOUNT_ID=clarity.dbo.hsp_account.HSP_ACCOUNT_ID
+   LEFT JOIN clarity.dbo.ZC_MC_PAT_STATUS ON clarity.dbo.ZC_MC_PAT_STATUS.PAT_STATUS_C=clarity.dbo.hsp_account.PATIENT_STATUS_C
+   LEFT JOIN clarity.dbo.ZC_DISCH_DISP AS zdd
+   ON zdd.DISCH_DISP_C=clarity.dbo.PAT_ENC_HSP.DISCH_DISP_C
+   LEFT OUTER JOIN CLARITY.dbo.PATIENT ON (CLARITY.dbo.PATIENT.PAT_ID=CLARITY.dbo.PAT_ENC_HSP.PAT_ID)
+   LEFT OUTER JOIN CLARITY.dbo.ZC_PAT_CLASS  ZC_PAT_CLASS_Surg ON (ZC_PAT_CLASS_Surg.ADT_PAT_CLASS_C=CLARITY.dbo.OR_LOG.PAT_TYPE_C)
+   LEFT OUTER JOIN CLARITY.dbo.ZC_PAT_CLASS  ZC_PAT_CLASS_Enc ON (ZC_PAT_CLASS_Enc.ADT_PAT_CLASS_C=clarity.dbo.pat_enc_hsp.ADT_PAT_CLASS_C )
+  LEFT OUTER JOIN clarity.dbo.ZC_OR_CASE_CLASS AS zocc  ON zocc.CASE_CLASS_C=clarity.dbo.or_log.CASE_CLASS_C
+  LEFT OUTER JOIN clarity.dbo.ZC_OR_CASE_CLASS AS zoclog  ON zoclog.CASE_CLASS_C=clarity.dbo.or_log.CASE_CLASS_C
+  LEFT OUTER JOIN clarity.dbo.OR_PROC_CPT_ID ON clarity.dbo.OR_PROC.OR_PROC_ID=clarity.dbo.OR_PROC_CPT_ID.OR_PROC_ID
+  LEFT OUTER JOIN clarity.dbo.CLARITY_SER  CLARITY_SER_Surg ON (clarity.dbo.OR_LOG_ALL_SURG.SURG_ID=CLARITY_SER_Surg.PROV_ID)
+   FULL OUTER JOIN clarity.dbo.F_AN_RECORD_SUMMARY ON (clarity.dbo.OR_LOG.LOG_ID=clarity.dbo.F_AN_RECORD_SUMMARY.AN_LOG_ID)
+   LEFT OUTER JOIN clarity.dbo.CLARITY_SER  CLARITY_SER_Anthesia1 ON (clarity.dbo.F_AN_RECORD_SUMMARY.AN_RESP_PROV_ID=CLARITY_SER_Anthesia1.PROV_ID)
+   LEFT OUTER JOIN clarity.dbo.ZC_OR_SERVICE ON (clarity.dbo.ZC_OR_SERVICE.SERVICE_C=clarity.dbo.OR_LOG.SERVICE_C)
+   LEFT OUTER JOIN clarity.dbo.CLARITY_SER  CLARITY_SER_LOG_ROOM ON (CLARITY_SER_LOG_ROOM.PROV_ID=CLARITY.dbo.OR_LOG.ROOM_ID)
+   LEFT OUTER JOIN clarity.dbo.CLARITY_LOC ON (clarity.dbo.CLARITY_LOC.LOC_ID=clarity.dbo.OR_LOG.LOC_ID)
+   LEFT OUTER JOIN clarity.dbo.ZC_OR_STATUS AS zos   ON zos.STATUS_C=clarity.dbo.OR_LOG.STATUS_C
+   LEFT OUTER JOIN clarity.dbo.ZC_CASE_TYPE AS zct ON zct.CASE_TYPE_C=clarity.dbo.or_log.CASE_TYPE_C
+   LEFT OUTER JOIN clarity.dbo.ZC_DISCH_DISP AS zdish ON zdish.DISCH_DISP_C=clarity.dbo.pat_enc_hsp.DISCH_DISP_C
+   LEFT OUTER JOIN clarity.dbo.ZC_MC_ADM_TYPE AS zadm ON zadm.ADMISSION_TYPE_C=clarity.dbo.hsp_account.ADMISSION_TYPE_C
+   LEFT JOIN radb.dbo.ReadmissionFact ra    
+	ON CONVERT (varchar(30),clarity.dbo.PAT_ENC_HSP.HSP_ACCOUNT_ID)=ra.IDX_VisitNum  
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME 
+  
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 330  )
+  )  Setup_Start ON (Setup_Start.LOG_ID=CLARITY.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 340  )
+  )  Setup_End ON (Setup_End.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 60  )
+  )  In_Room ON (In_Room.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+  LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 110  )
+  )  Out_of_Room ON (Out_of_Room.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 400  )
+  )  Cleanup_Start ON (Cleanup_Start.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 410)
+  )  Cleanup_End ON (Cleanup_End.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 830)
+  )  AS Floorhold ON (Floorhold.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+  
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 840)
+  )  AS Flooroffhold ON (Flooroffhold.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 120)
+  )  PACU_IN ON (PACU_IN.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  CLARITY.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 140)
+  )  PACU_OUT ON (PACU_OUT.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  CLARITY.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 20  )
+  )  PRE_PROC_IN ON (PRE_PROC_IN.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  CLARITY.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 50)
+  )  PRE_PROC_OUT ON (PRE_PROC_OUT.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+  --new events
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  CLARITY.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 70)
+  )  ANES_START ON (ANES_START.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  CLARITY.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 100)
+  )  ANES_FINISH ON (ANES_FINISH.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  CLARITY.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 80)
+  )  PROC_START ON (PROC_START.LOG_ID=clarity.dbo.OR_LOG.LOG_ID)
+  
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 390)
+  )  PROC_FINISH ON (PROC_FINISH.LOG_ID=CLARITY.dbo.OR_LOG.LOG_ID)
+
+   LEFT OUTER JOIN ( 
+  SELECT CASETIME .LOG_ID,
+  CASETIME .TRACKING_TIME_IN
+FROM
+  clarity.dbo.OR_LOG_CASE_TIMES  CASETIME    
+WHERE
+( CASETIME .TRACKING_EVENT_C  = 180)
+  )  AS proccarecomplete ON (proccarecomplete.LOG_ID=CLARITY.dbo.OR_LOG.LOG_ID)
+
+  
+WHERE 
+ (CLARITY.dbo.pat_enc_hsp.HOSP_DISCH_TIME>'9/1/14' AND  CLARITY.dbo.pat_enc_hsp.HOSP_DISCH_TIME<='12/31/16')
+ AND     clarity.dbo.CLARITY_LOC.LOC_NAME  IN  ( 'BH MAIN OR'  )
+   
+   AND clarity.dbo.or_log.STATUS_C IN (2,3,5) --posted, unposted, complete
+AND clarity.dbo.OR_PROC_CPT_ID.REAL_CPT_CODE  IN       ('27447', '27130')  
+AND clarity.dbo.OR_LOG_ALL_PROC.line=1 --primary procedure only
+ORDER BY clarity.dbo.or_log.LOG_ID,clarity.dbo.OR_LOG_ALL_PROC.line;
+
