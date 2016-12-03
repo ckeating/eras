@@ -1,27 +1,28 @@
 /****** Object:  StoredProcedure [dbo].[CRD_ERASYNHGI_PullData]    Script Date: 12/2/2016 11:47:24 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[CRD_ERASYNHGI_PullData] --insert proc here
-AS
+--uncomment for prod
+--SET ANSI_NULLS ON
+--GO
+--SET QUOTED_IDENTIFIER ON
+--GO
+--CREATE PROCEDURE [dbo].[CRD_ERASYNHGI_PullData] --insert proc here
+--AS
 
-SET NOCOUNT ON;
-SET ANSI_WARNINGS OFF;
+--SET NOCOUNT ON;
+--SET ANSI_WARNINGS OFF;
 
 
-  DECLARE @Msg VARCHAR(200);
-  DECLARE @Procname varchar(200);
-  DECLARE @CompletionMessage VARCHAR(1000);
+--  DECLARE @Msg VARCHAR(200);
+--  DECLARE @Procname varchar(200);
+--  DECLARE @CompletionMessage VARCHAR(1000);
     
-  SET @Procname='CRD_ERASYNHGI_PullData';
+--  SET @Procname='CRD_ERASYNHGI_PullData';
 
 
-	SET @Msg = 'Begin procedure ' + @Procname;
-    EXEC radb.dbo.ynhhs_logmsg @piMessage = @Msg;
+--	SET @Msg = 'Begin procedure ' + @Procname;
+--    EXEC radb.dbo.ynhhs_logmsg @piMessage = @Msg;
 
 
-BEGIN TRY
+--BEGIN TRY
 
 
 --population criteria
@@ -485,7 +486,8 @@ SELECT logseq=ROW_NUMBER() OVER (PARTITION BY LOG_ID ORDER BY LOG_ID)
 ,       iv_fluid_dc_pod0 = CAST(0 AS INT)
 ,       iv_fluid_dc_pod1noon = CAST(0 AS INT)
 ,       iv_fluid_dc_pod2 = CAST(0 AS INT)
-,       foleypod1 = CAST(0 AS INT)
+,       foleypod2_7am_num = CAST(0 AS INT)
+,       foleypod2_7am_den = CAST(0 AS INT)
 ,       foleycount = CAST(0 AS INT)
 ,       foleyremovedcount = CAST(0 AS INT)
 ,       date_last_painmed = CAST(NULL AS DATETIME)
@@ -977,29 +979,29 @@ WHERE o.rid=1;
 
 
 
---*********************************************************************************
+----*********************************************************************************
 
--- Log the completion message (successful)
+---- Log the completion message (successful)
     
-    SET @Msg =  @Procname + ' completed successfully'
-    EXEC ynhhs_logmsg @piMessage = @Msg;
+--    SET @Msg =  @Procname + ' completed successfully'
+--    EXEC ynhhs_logmsg @piMessage = @Msg;
 
- -- Error handling
+-- -- Error handling
 
- END TRY
+-- END TRY
   
-  BEGIN CATCH
+--  BEGIN CATCH
 
 
--- Log error message
+---- Log error message
 
-    SET @Msg = 'Error in procedure ' + @Procname ;
-    EXEC ynhhs_logmsg @piMessage = @Msg;
+--    SET @Msg = 'Error in procedure ' + @Procname ;
+--    EXEC ynhhs_logmsg @piMessage = @Msg;
 
-  END CATCH
+--  END CATCH
 
   
 
 
 
-GO
+--GO
