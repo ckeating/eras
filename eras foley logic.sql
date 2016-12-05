@@ -274,3 +274,73 @@ WHERE iln.IP_LDA_ID=1896153
 
 
 11386376
+
+
+
+
+SELECT SUM(foleypod2_7am_num),SUM(foleypod2_7am_den)
+FROM RADB.dbo.CRD_ERAS_YNHGI_Case
+
+SELECT *
+FROM dbo.vw_FlowSheet_Metadata AS vfsm
+WHERE FLO_MEAS_ID IN ( '3048148000', '8148', '8151' )
+
+
+WITH foleyrec AS (
+select 
+cec.LOG_ID
+,cec.HAR
+,cec.admissioncsn
+,cec.PAT_MRN_ID
+,cec.HOSP_ADMSN_TIME
+,cec.HOSP_DISCH_TIME
+,foleycount=f.foleycount
+,foleyremovedcount=f.foleysremoved
+,foleypod1=CASE WHEN f.foleycount=f.foleysremoved THEN 1 ELSE 0 END
+,suprapubic_count=f.suprapubic
+FROM RADB.dbo.CRD_ERAS_YNHGI_Case AS cec
+JOIN 
+(SELECT LOG_ID,COUNT(*) AS foleycount,SUM(removalflag) AS foleysremoved,SUM(CASE WHEN FLO_MEAS_ID ='8151' THEN 1 ELSE 0 END ) AS suprapubic
+FROM #foley AS f
+WHERE PLACEMENT_INSTANT >HOSP_ADMSN_TIME AND PLACEMENT_INSTANT <procedurefinish
+GROUP BY LOG_ID) AS f ON cec.LOG_ID=f.LOG_ID
+)SELECT fr.LOG_ID
+ ,      fr.HAR
+ ,      fr.admissioncsn
+ ,      fr.PAT_MRN_ID
+ ,      fr.HOSP_ADMSN_TIME
+ ,      fr.HOSP_DISCH_TIME
+ ,      fr.foleycount
+ ,      fr.foleyremovedcount
+ ,      fr.foleypod1
+ ,      fr.suprapubic_count
+ ,f.removalflag
+ ,pod2_7am=DATEADD(HOUR,7,f.postopday2_begin)
+ ,f.PLACEMENT_INSTANT
+ ,f.REMOVAL_INSTANT
+ ,f.FLO_MEAS_ID
+ ,f.DISP_NAME
+ ,f.FLO_MEAS_NAME 
+ ,vlt.PROCEDURE_START_DTTM,vlt.PROCEDURE_COMP_DTTM
+FROM foleyrec AS fr
+LEFT JOIN #foley AS f ON f.log_id=fr.log_id
+LEFT JOIN clarity.dbo.V_LOG_TIMING_EVENTS AS vlt ON vlt.LOG_ID=fr.LOG_ID
+WHERE (fr.suprapubic_count=0 AND fr.foleycount>1)
+AND (f.PLACEMENT_INSTANT >f.HOSP_ADMSN_TIME AND f.PLACEMENT_INSTANT <=vlt.PROCEDURE_COMP_DTTM)
+
+ORDER BY fr.LOG_ID,f.PLACEMENT_INSTANT;
+
+SELECT *
+,postopday2_7am_begin=DATEADD(HOUR,7,postopday2_begin)
+FROM #foley 
+WHERE LOG_ID=400599
+WHERE PAT_ENC_CSN_ID=112483580
+
+SELECT * FROM dbo.CRD_ERAS_YNHGI_Case AS ceyc WHERE LOG_ID=384464
+
+SELECT * FROM radb.dbo.vw_PatEnc AS vpe
+WHERE PAT_ENC_CSN_ID=108842903
+
+SELECT *
+FROM #foley AS f
+WHERE PAT_ENC_CSN_ID=116476396

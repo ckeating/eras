@@ -46,7 +46,7 @@ FROM
   LEFT OUTER JOIN clarity.dbo.OR_PROC_CPT_ID ON clarity.dbo.OR_PROC.OR_PROC_ID=clarity.dbo.OR_PROC_CPT_ID.OR_PROC_ID
   LEFT JOIN clarity.dbo.CLARITY_LOC AS cl ON orl.LOC_ID=cl.LOC_ID
   JOIN RADB.dbo.CRD_ERAS_YNHGI_CptList AS cptdim ON cptdim.CPTCode=clarity.dbo.OR_PROC_CPT_ID.REAL_CPT_CODE
-WHERE orl.STATUS_C IN (2,5)
+WHERE orl.STATUS_C IN (2,5) --2-posted 5-complete cases only
 AND cl.LOC_NAME IN  ( 'YNH NORTH PAVILION OR','YNH EAST PAVILION OR','YNH SOUTH PAVILION OR','SRC MAIN OR')
 AND orl.SURGERY_DATE>='1/1/2015';
 
@@ -124,6 +124,12 @@ ORDER BY LOG_ID;
 
 
  
+
+--get all procedures for each case 
+--rollup to case level further in the procedure
+
+--NOTE: clarity.dbo.V_LOG_TIMING_EVENTS is probably a cleaner way to pull
+--the timing events
 
 IF object_id('tempdb..##allprocs') IS NOT NULL
 	DROP TABLE ##allprocs;
@@ -234,6 +240,11 @@ FROM    clarity.dbo.OR_LOG
    LEFT OUTER JOIN clarity.dbo.CLARITY_LOC ON (clarity.dbo.CLARITY_LOC.LOC_ID=clarity.dbo.OR_LOG.LOC_ID)
    LEFT OUTER JOIN clarity.dbo.ZC_OR_STATUS AS zos   ON zos.STATUS_C=clarity.dbo.OR_LOG.STATUS_C
    LEFT OUTER JOIN clarity.dbo.ZC_CASE_TYPE AS zct ON zct.CASE_TYPE_C=clarity.dbo.or_log.CASE_TYPE_C
+
+
+--NOTE: clarity.dbo.V_LOG_TIMING_EVENTS is probably a cleaner way to pull
+--the timing events than the below code
+
    
    LEFT OUTER JOIN ( 
   SELECT CASETIME .LOG_ID,
@@ -361,8 +372,7 @@ FROM
 WHERE
 ( CASETIME .TRACKING_EVENT_C  = 390)
   )  PROC_FINISH ON (PROC_FINISH.LOG_ID=CLARITY.dbo.OR_LOG.LOG_ID)
-
-  
+    
 WHERE  PAT_ENC_HSP.HOSP_DISCH_TIME IS NOT NULL   
 
 ORDER BY clarity.dbo.or_log.LOG_ID,clarity.dbo.OR_LOG_ALL_PROC.line;
@@ -576,6 +586,12 @@ FROM radb.dbo.CRD_ERAS_YNHGI_Case AS c
 JOIN clean AS cl ON c.LOG_ID=cl.LOG_ID;
 
 
+
+--logic if there are multiple procedures from CPT list in same case:
+--1. Open and lap in same case: flag the OpenVsLaparoscopic variable as: open
+--2. Colectomy and proctectomy in same case flag PrimaryProcedureCategory: proctectomy 
+
+
 --update duplicate proc category cases
 WITH cats AS(
 SELECT rid=ROW_NUMBER() OVER (PARTITION BY log_id ORDER BY log_id)
@@ -616,7 +632,7 @@ SET CaseLength_hrs=DATEDIFF(HOUR,inroom,outofroom);
 UPDATE RADB.dbo.CRD_ERAS_YNHGI_Case
 SET CaseLength_min=DATEDIFF(MINUTE,inroom,outofroom);
 
-
+--create hospital encounter level table for population
 IF object_id('RADB.dbo.CRD_ERAS_YNHGI_EncDim') IS NOT NULL
 	DROP TABLE RADB.dbo.CRD_ERAS_YNHGI_EncDim;
 
@@ -651,9 +667,11 @@ SELECT
   cast (0 AS INT) AS OrdersetFlag,
   patient_weight_oz=CAST(NULL AS DECIMAL(13,4)),
   patient_weight_kg=CAST(NULL AS DECIMAL(13,4)),
+  --placeholders for flagging encounters that use ERAS orderset
   FirstOS_ordernumber=CAST(NULL AS NUMERIC(18,0)),
   FirstOS_ordername = CAST(NULL AS VARCHAR(510)),
   FirstOS_orderdate= CAST(NULL AS DATETIME),
+  --orderset flag end
   SurgeryCampus=ec.Campus,
   PrimaryProcedureCategory=ec.PrimaryProcedureCategory,
   PrimaryOpenVsLap=ec.PrimaryOpenVsLap,
